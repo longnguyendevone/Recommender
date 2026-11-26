@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchCategories,
+  fetchNearbyPois,
   fetchSampleUsers,
   postRecommend,
 } from "./api/client";
@@ -17,8 +18,12 @@ export default function App() {
   const [showGroundTruth, setShowGroundTruth] = useState(true);
 
   const [customStops, setCustomStops] = useState([]);
-  const [mapClickMode, setMapClickMode] = useState(false);
+  const [mapClickMode, setMapClickMode] = useState(true);
   const [customAnchor, setCustomAnchor] = useState(null);
+  const [clickedPoint, setClickedPoint] = useState(null);
+  const [nearbyPois, setNearbyPois] = useState([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [previewPoi, setPreviewPoi] = useState(null);
 
   const [topCategories, setTopCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -79,9 +84,11 @@ export default function App() {
     setLoading(true);
     setErrorMsg("");
     setSelectedRec(null);
+    setPreviewPoi(null);
     try {
       const payload = {
-        user_id: mode === "returning" && currentSample ? currentSample.user_id : null,
+        user_id:
+          mode === "returning" && currentSample ? currentSample.user_id : null,
         trajectory: activeStops.map((s) => s.poi_id),
         current_lat: activeAnchor.lat,
         current_lon: activeAnchor.lon,
@@ -119,7 +126,16 @@ export default function App() {
     if (mode === "returning" && currentSample) {
       runRecommend();
     }
-  }, [mode, currentSample, model, maxDistanceKm, topK, selectedCategories, hourOfDay, runRecommend]);
+  }, [
+    mode,
+    currentSample,
+    model,
+    maxDistanceKm,
+    topK,
+    selectedCategories,
+    hourOfDay,
+    runRecommend,
+  ]);
 
   const handleToggleCategory = (cat) => {
     setSelectedCategories((prev) =>
@@ -130,10 +146,28 @@ export default function App() {
   const handleAddCustomStop = (poi) => {
     setCustomStops((prev) => [...prev.slice(-4), poi]);
     setCustomAnchor(null);
+    setPreviewPoi(null);
+    setClickedPoint(null);
+    setNearbyPois([]);
   };
 
   const handleRemoveCustomStop = (idx) => {
     setCustomStops((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleMapClick = async (coords) => {
+    setClickedPoint(coords);
+    setPreviewPoi(null);
+    setSelectedRec(null);
+    setNearbyLoading(true);
+    try {
+      const items = await fetchNearbyPois(coords.lat, coords.lon, 0.8, 6);
+      setNearbyPois(items);
+    } catch (err) {
+      setErrorMsg(`Nearby POI lookup failed: ${err.message}`);
+    } finally {
+      setNearbyLoading(false);
+    }
   };
 
   return (
@@ -144,12 +178,16 @@ export default function App() {
           onModeChange={(nextMode) => {
             setMode(nextMode);
             setSelectedRec(null);
+            setPreviewPoi(null);
+            setClickedPoint(null);
+            setNearbyPois([]);
           }}
           samples={samples}
           selectedSampleId={selectedSampleId}
           onSelectSample={(id) => {
             setSelectedSampleId(id);
             setSelectedRec(null);
+            setPreviewPoi(null);
           }}
           showGroundTruth={showGroundTruth}
           onToggleGroundTruth={setShowGroundTruth}
@@ -159,9 +197,30 @@ export default function App() {
           onClearCustomStops={() => {
             setCustomStops([]);
             setCustomAnchor(null);
+            setPreviewPoi(null);
+            setClickedPoint(null);
+            setNearbyPois([]);
+          }}
+          onLocatePoi={(poi) => {
+            setSelectedRec(null);
+            setPreviewPoi(poi);
           }}
           mapClickMode={mapClickMode}
           onToggleMapClickMode={() => setMapClickMode((v) => !v)}
+          nearbyPois={nearbyPois}
+          nearbyLoading={nearbyLoading}
+          clickedPoint={clickedPoint}
+          onUseClickedAsAnchor={() => {
+            if (clickedPoint) {
+              setCustomAnchor(clickedPoint);
+              setClickedPoint(null);
+              setNearbyPois([]);
+            }
+          }}
+          onDismissNearby={() => {
+            setClickedPoint(null);
+            setNearbyPois([]);
+          }}
           customAnchor={customAnchor}
           model={model}
           onModelChange={setModel}
@@ -184,7 +243,10 @@ export default function App() {
           responseMeta={responseMeta}
           recommendations={recommendations}
           selectedRec={selectedRec}
-          onSelectRec={setSelectedRec}
+          onSelectRec={(rec) => {
+            setPreviewPoi(null);
+            setSelectedRec(rec);
+          }}
         />
       </aside>
 
@@ -194,14 +256,19 @@ export default function App() {
           anchor={activeAnchor}
           maxDistanceKm={maxDistanceKm}
           recommendations={recommendations}
-          groundTruth={mode === "returning" && currentSample ? currentSample.ground_truth : null}
+          groundTruth={
+            mode === "returning" && currentSample
+              ? currentSample.ground_truth
+              : null
+          }
           showGroundTruth={mode === "returning" && showGroundTruth}
           selectedRec={selectedRec}
+          previewPoi={previewPoi}
+          clickedPoint={mode === "cold_start" ? clickedPoint : null}
           mapClickMode={mode === "cold_start" && mapClickMode}
-          onMapClick={(coords) => {
-            setCustomAnchor(coords);
-            setMapClickMode(false);
-          }}
+          onMapClick={handleMapClick}
+          coldStartMode={mode === "cold_start"}
+          onAddStopFromMap={handleAddCustomStop}
         />
       </main>
     </div>

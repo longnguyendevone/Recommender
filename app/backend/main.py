@@ -11,6 +11,7 @@ from app.backend.recommender_service import RecommenderService
 from app.backend.schemas import (
     CategoryCount,
     HealthResponse,
+    NearbyPOI,
     POISummary,
     RecommendRequest,
     RecommendResponse,
@@ -67,6 +68,16 @@ def search_pois(
     limit: int = Query(default=20, ge=1, le=100),
 ) -> list[POISummary]:
     return _get_service().search_pois(q=q, category=category, limit=limit)
+
+
+@app.get("/pois/nearby", response_model=list[NearbyPOI])
+def nearby_pois(
+    lat: float = Query(...),
+    lon: float = Query(...),
+    radius_km: float = Query(default=0.8, gt=0.05, le=20.0),
+    limit: int = Query(default=8, ge=1, le=30),
+) -> list[NearbyPOI]:
+    return _get_service().get_nearby_pois(lat=lat, lon=lon, radius_km=radius_km, limit=limit)
 
 
 @app.get("/pois/categories", response_model=list[CategoryCount])

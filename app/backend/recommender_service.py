@@ -13,6 +13,7 @@ import torch
 
 from app.backend.schemas import (
     CategoryCount,
+    NearbyPOI,
     POIRecommendation,
     POISummary,
     RecommendRequest,
@@ -84,6 +85,16 @@ class RecommenderService:
             ),
         }
         self.sample_trajectories = self._build_sample_trajectories(limit=20)
+        if self.sample_trajectories:
+            first = self.sample_trajectories[0]
+            self.recommend(
+                RecommendRequest(
+                    user_id=first.user_id,
+                    trajectory=[s.poi_id for s in first.stops],
+                    model="hybrid",
+                    top_k=5,
+                )
+            )
 
     def _build_category_counts(self) -> list[CategoryCount]:
         vc = self.poi_meta["category"].astype(str).value_counts()
@@ -151,6 +162,40 @@ class RecommenderService:
             return []
         order = matched[np.argsort(-self.pops[matched])][:limit]
         return [self._poi_summary_from_pos(int(pos)) for pos in order]
+
+    def get_nearby_pois(
+        self, lat: float, lon: float, radius_km: float = 0.8, limit: int = 8
+    ) -> list[NearbyPOI]:
+        cand_pos, dists = query_radius_km(
+            self.ball_tree, lat, lon, radius_km, sort_results=True
+        )
+        if len(cand_pos) < limit:
+            cand_pos, dists = query_radius_km(
+                self.ball_tree, lat, lon, max(radius_km, 3.0), sort_results=True
+            )
+
+        results: list[NearbyPOI] = []
+        seen_ids: set[int] = set()
+        for pos, dist_val in zip(cand_pos, dists):
+            pid = int(self.venue_ids[pos])
+            if pid in seen_ids:
+                continue
+            seen_ids.add(pid)
+            results.append(
+                NearbyPOI(
+                    poi_id=pid,
+                    name=str(self.names[pos]),
+                    category=str(self.categories_arr[pos]),
+                    lat=float(self.lats[pos]),
+                    lon=float(self.lons[pos]),
+                    address=str(self.addresses[pos]),
+                    train_popularity=int(self.pops[pos]),
+                    distance_km=round(float(dist_val), 3),
+                )
+            )
+            if len(results) >= limit:
+                break
+        return results
 
     def get_categories(self) -> list[CategoryCount]:
         return self.cat_counts
@@ -316,6 +361,10 @@ class RecommenderService:
                 + w["cf"] * s_cf_n
                 + w["spatial"] * s_spatial
             )
+        elif model_name == "sequential_cl":
+            scores = s_seq_n
+        elif model_name == "cf_bpr":
+            scores = s_cf_n
         else:
             scores = _minmax_norm(model.score_candidates(query, cand_pois))
 

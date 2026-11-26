@@ -14,34 +14,47 @@ import {
 
 const DEFAULT_CENTER = [40.7580, -73.9855];
 
-function createNumberIcon(number, variant) {
+function createNumberIcon(label, variant) {
   return L.divIcon({
     className: "custom-div-icon",
-    html: `<div class="poi-pin poi-pin-${variant}">${number}</div>`,
+    html: `<div class="poi-pin poi-pin-${variant}">${label}</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -14],
   });
 }
 
-function MapViewportController({ anchor, selectedRec, recMarkerRefs }) {
+function MapViewportController({
+  anchor,
+  selectedRec,
+  previewPoi,
+  recMarkerRefs,
+  previewMarkerRef,
+}) {
   const map = useMap();
 
   useEffect(() => {
+    if (previewPoi) {
+      map.flyTo([previewPoi.lat, previewPoi.lon], 15, { duration: 0.65 });
+      if (previewMarkerRef.current) {
+        previewMarkerRef.current.openPopup();
+      }
+      return;
+    }
     if (selectedRec) {
-      map.flyTo([selectedRec.lat, selectedRec.lon], 15, { duration: 0.7 });
+      map.flyTo([selectedRec.lat, selectedRec.lon], 15, { duration: 0.65 });
       const marker = recMarkerRefs.current[selectedRec.poi_id];
       if (marker) {
         marker.openPopup();
       }
     }
-  }, [selectedRec, map, recMarkerRefs]);
+  }, [selectedRec, previewPoi, map, recMarkerRefs, previewMarkerRef]);
 
   useEffect(() => {
-    if (!selectedRec && anchor) {
+    if (!selectedRec && !previewPoi && anchor) {
       map.panTo([anchor.lat, anchor.lon], { animate: true });
     }
-  }, [anchor, selectedRec, map]);
+  }, [anchor, selectedRec, previewPoi, map]);
 
   return null;
 }
@@ -65,14 +78,19 @@ export default function MapCanvas({
   groundTruth,
   showGroundTruth,
   selectedRec,
+  previewPoi,
+  clickedPoint,
   mapClickMode,
   onMapClick,
+  coldStartMode,
+  onAddStopFromMap,
 }) {
   const recMarkerRefs = useRef({});
+  const previewMarkerRef = useRef(null);
   const polylinePositions = stops.map((s) => [s.lat, s.lon]);
 
   return (
-    <div className="map-panel">
+    <div className={mapClickMode ? "map-panel map-pick-cursor" : "map-panel"}>
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={13}
@@ -87,7 +105,9 @@ export default function MapCanvas({
         <MapViewportController
           anchor={anchor}
           selectedRec={selectedRec}
+          previewPoi={previewPoi}
           recMarkerRefs={recMarkerRefs}
+          previewMarkerRef={previewMarkerRef}
         />
         <MapClickHandler enabled={mapClickMode} onMapClick={onMapClick} />
 
@@ -109,7 +129,13 @@ export default function MapCanvas({
                 Stop {idx + 1}: {stop.name}
               </strong>
               <br />
-              Category: {stop.category}
+              {stop.category}
+              {stop.address ? (
+                <>
+                  <br />
+                  <span className="popup-addr">{stop.address}</span>
+                </>
+              ) : null}
             </Popup>
           </Marker>
         ))}
@@ -127,6 +153,50 @@ export default function MapCanvas({
           />
         )}
 
+        {clickedPoint && (
+          <Marker
+            position={[clickedPoint.lat, clickedPoint.lon]}
+            icon={createNumberIcon("?", "amber")}
+          >
+            <Popup>
+              <strong>Clicked Location</strong>
+              <br />
+              Select a nearby venue in the left panel to add it to your itinerary.
+            </Popup>
+          </Marker>
+        )}
+
+        {previewPoi && (
+          <Marker
+            position={[previewPoi.lat, previewPoi.lon]}
+            icon={createNumberIcon("P", "amber")}
+            ref={previewMarkerRef}
+          >
+            <Popup>
+              <strong>{previewPoi.name}</strong>
+              <br />
+              {previewPoi.category}
+              {previewPoi.address ? (
+                <>
+                  <br />
+                  <span className="popup-addr">{previewPoi.address}</span>
+                </>
+              ) : null}
+              {coldStartMode && (
+                <div className="popup-action">
+                  <button
+                    type="button"
+                    className="btn-mini btn-mini-primary"
+                    onClick={() => onAddStopFromMap(previewPoi)}
+                  >
+                    + Add to Trail
+                  </button>
+                </div>
+              )}
+            </Popup>
+          </Marker>
+        )}
+
         {showGroundTruth && groundTruth && (
           <Marker
             position={[groundTruth.lat, groundTruth.lon]}
@@ -135,7 +205,7 @@ export default function MapCanvas({
             <Popup>
               <strong>Ground Truth: {groundTruth.name}</strong>
               <br />
-              Category: {groundTruth.category}
+              {groundTruth.category}
             </Popup>
           </Marker>
         )}
@@ -159,8 +229,17 @@ export default function MapCanvas({
               {rec.category} | {rec.distance_km.toFixed(2)} km
               <br />
               Score: {rec.total_score.toFixed(3)}
-              <br />
-              <span>{rec.explanation}</span>
+              {coldStartMode && (
+                <div className="popup-action">
+                  <button
+                    type="button"
+                    className="btn-mini btn-mini-primary"
+                    onClick={() => onAddStopFromMap(rec)}
+                  >
+                    + Add as Next Stop
+                  </button>
+                </div>
+              )}
             </Popup>
           </Marker>
         ))}

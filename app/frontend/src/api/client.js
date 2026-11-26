@@ -25,6 +25,16 @@ export function searchPois(q = "", category = "", limit = 15) {
   return requestJson(`/pois/search?${params.toString()}`);
 }
 
+export function fetchNearbyPois(lat, lon, radiusKm = 0.8, limit = 8) {
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lon: String(lon),
+    radius_km: String(radiusKm),
+    limit: String(limit),
+  });
+  return requestJson(`/pois/nearby?${params.toString()}`);
+}
+
 export function fetchCategories() {
   return requestJson("/pois/categories");
 }

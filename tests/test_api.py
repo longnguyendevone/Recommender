@@ -30,6 +30,13 @@ def test_health_and_catalog_endpoints() -> None:
         assert search_res.status_code == 200
         assert len(search_res.json()) > 0
 
+        nearby_res = client.get("/pois/nearby?lat=40.7580&lon=-73.9855&radius_km=1.0&limit=6")
+        assert nearby_res.status_code == 200
+        nearby_items = nearby_res.json()
+        assert len(nearby_items) > 0
+        assert "address" in nearby_items[0]
+        assert "distance_km" in nearby_items[0]
+
         cats_res = client.get("/pois/categories")
         assert cats_res.status_code == 200
         assert len(cats_res.json()) > 100

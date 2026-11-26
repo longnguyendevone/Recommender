@@ -61,6 +61,10 @@ class POISummary(BaseModel):
     train_popularity: int
 
 
+class NearbyPOI(POISummary):
+    distance_km: float
+
+
 class CategoryCount(BaseModel):
     category: str
     count: int
