@@ -1,0 +1,19 @@
+seed: 42
+processed_dir: "data/processed"
+artifacts_dir: "artifacts/models"
+
+popularity:
+  local_radius_km: 3.0
+  local_weight: 0.6
+
+cf_bpr:
+  factors: 64
+  learning_rate: 0.05
+  regularization: 0.01
+  iterations: 50
+  num_threads: 4
+
+content_based:
+  spatial_sigma_km: 2.0
+  category_weight: 0.6
+  spatial_weight: 0.4

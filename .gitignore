@@ -1,0 +1,14 @@
+.venv/
+data/
+artifacts/*.pt
+artifacts/*.pth
+artifacts/*.pkl
+artifacts/models/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+app/frontend/node_modules/
+app/frontend/dist/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+seed: 42
+processed_dir: "data/processed"
+artifacts_dir: "artifacts/models"
+
+candidate_radius_km: 15.0
+candidate_limit: 500
+default_max_distance_km: 5.0
+spatial_sigma_km: 2.0
+
+weights:
+  sequential: 0.45
+  content: 0.20
+  cf: 0.15
+  spatial: 0.20

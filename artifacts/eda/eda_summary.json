@@ -1,0 +1,292 @@
+{
+  "dataset_name": "CRUISEResearchGroup/Massive-STEPS-New-York",
+  "dataset_config": "tabular",
+  "detected_columns": {
+    "user": "user_id",
+    "poi": "venue_id",
+    "trajectory": "trail_id",
+    "category": "venue_category",
+    "lat": "latitude",
+    "lon": "longitude",
+    "timestamp": "timestamp"
+  },
+  "splits": {
+    "train": {
+      "num_rows": 190740,
+      "columns": [
+        "trail_id",
+        "user_id",
+        "venue_id",
+        "latitude",
+        "longitude",
+        "name",
+        "address",
+        "venue_category",
+        "venue_category_id",
+        "venue_category_id_code",
+        "venue_city",
+        "venue_city_latitude",
+        "venue_city_longitude",
+        "venue_country",
+        "timestamp"
+      ],
+      "dtypes": {
+        "trail_id": "str",
+        "user_id": "int64",
+        "venue_id": "int64",
+        "latitude": "float64",
+        "longitude": "float64",
+        "name": "str",
+        "address": "str",
+        "venue_category": "str",
+        "venue_category_id": "str",
+        "venue_category_id_code": "int64",
+        "venue_city": "str",
+        "venue_city_latitude": "float64",
+        "venue_city_longitude": "float64",
+        "venue_country": "str",
+        "timestamp": "str"
+      },
+      "missing_counts": {
+        "trail_id": 0,
+        "user_id": 0,
+        "venue_id": 0,
+        "latitude": 13806,
+        "longitude": 13806,
+        "name": 13806,
+        "address": 23874,
+        "venue_category": 0,
+        "venue_category_id": 0,
+        "venue_category_id_code": 0,
+        "venue_city": 0,
+        "venue_city_latitude": 0,
+        "venue_city_longitude": 0,
+        "venue_country": 0,
+        "timestamp": 0
+      },
+      "nunique": {
+        "unique_user": 6917,
+        "unique_poi": 39113,
+        "unique_trajectory": 64428,
+        "unique_category": 569
+      }
+    },
+    "validation": {
+      "num_rows": 27201,
+      "columns": [
+        "trail_id",
+        "user_id",
+        "venue_id",
+        "latitude",
+        "longitude",
+        "name",
+        "address",
+        "venue_category",
+        "venue_category_id",
+        "venue_category_id_code",
+        "venue_city",
+        "venue_city_latitude",
+        "venue_city_longitude",
+        "venue_country",
+        "timestamp"
+      ],
+      "dtypes": {
+        "trail_id": "str",
+        "user_id": "int64",
+        "venue_id": "int64",
+        "latitude": "float64",
+        "longitude": "float64",
+        "name": "str",
+        "address": "str",
+        "venue_category": "str",
+        "venue_category_id": "str",
+        "venue_category_id_code": "int64",
+        "venue_city": "str",
+        "venue_city_latitude": "float64",
+        "venue_city_longitude": "float64",
+        "venue_country": "str",
+        "timestamp": "str"
+      },
+      "missing_counts": {
+        "trail_id": 0,
+        "user_id": 0,
+        "venue_id": 0,
+        "latitude": 2017,
+        "longitude": 2017,
+        "name": 2017,
+        "address": 3542,
+        "venue_category": 0,
+        "venue_category_id": 0,
+        "venue_category_id_code": 0,
+        "venue_city": 0,
+        "venue_city_latitude": 0,
+        "venue_city_longitude": 0,
+        "venue_country": 0,
+        "timestamp": 0
+      },
+      "nunique": {
+        "unique_user": 3874,
+        "unique_poi": 13306,
+        "unique_trajectory": 9204,
+        "unique_category": 464
+      }
+    },
+    "test": {
+      "num_rows": 54427,
+      "columns": [
+        "trail_id",
+        "user_id",
+        "venue_id",
+        "latitude",
+        "longitude",
+        "name",
+        "address",
+        "venue_category",
+        "venue_category_id",
+        "venue_category_id_code",
+        "venue_city",
+        "venue_city_latitude",
+        "venue_city_longitude",
+        "venue_country",
+        "timestamp"
+      ],
+      "dtypes": {
+        "trail_id": "str",
+        "user_id": "int64",
+        "venue_id": "int64",
+        "latitude": "float64",
+        "longitude": "float64",
+        "name": "str",
+        "address": "str",
+        "venue_category": "str",
+        "venue_category_id": "str",
+        "venue_category_id_code": "int64",
+        "venue_city": "str",
+        "venue_city_latitude": "float64",
+        "venue_city_longitude": "float64",
+        "venue_country": "str",
+        "timestamp": "str"
+      },
+      "missing_counts": {
+        "trail_id": 0,
+        "user_id": 0,
+        "venue_id": 0,
+        "latitude": 4011,
+        "longitude": 4011,
+        "name": 4011,
+        "address": 6817,
+        "venue_category": 0,
+        "venue_category_id": 0,
+        "venue_category_id_code": 0,
+        "venue_city": 0,
+        "venue_city_latitude": 0,
+        "venue_city_longitude": 0,
+        "venue_country": 0,
+        "timestamp": 0
+      },
+      "nunique": {
+        "unique_user": 6227,
+        "unique_poi": 20416,
+        "unique_trajectory": 18409,
+        "unique_category": 502
+      }
+    }
+  },
+  "oov_relative_to_train": {
+    "user": {
+      "validation": {
+        "total_rows": 27201,
+        "oov_rows": 71,
+        "oov_row_rate": 0.00261,
+        "unique_entities": 3874,
+        "oov_unique_entities": 12,
+        "oov_unique_rate": 0.003098
+      },
+      "test": {
+        "total_rows": 54427,
+        "oov_rows": 30,
+        "oov_row_rate": 0.000551,
+        "unique_entities": 6227,
+        "oov_unique_entities": 11,
+        "oov_unique_rate": 0.001767
+      }
+    },
+    "poi": {
+      "validation": {
+        "total_rows": 27201,
+        "oov_rows": 2586,
+        "oov_row_rate": 0.09507,
+        "unique_entities": 13306,
+        "oov_unique_entities": 2478,
+        "oov_unique_rate": 0.186232
+      },
+      "test": {
+        "total_rows": 54427,
+        "oov_rows": 5050,
+        "oov_row_rate": 0.092785,
+        "unique_entities": 20416,
+        "oov_unique_entities": 4608,
+        "oov_unique_rate": 0.225705
+      }
+    },
+    "category": {
+      "validation": {
+        "total_rows": 27201,
+        "oov_rows": 7,
+        "oov_row_rate": 0.000257,
+        "unique_entities": 464,
+        "oov_unique_entities": 7,
+        "oov_unique_rate": 0.015086
+      },
+      "test": {
+        "total_rows": 54427,
+        "oov_rows": 11,
+        "oov_row_rate": 0.000202,
+        "unique_entities": 502,
+        "oov_unique_entities": 11,
+        "oov_unique_rate": 0.021912
+      }
+    }
+  },
+  "train_sample_rows": [
+    {
+      "trail_id": "2013_37",
+      "user_id": 1,
+      "venue_id": 29958,
+      "latitude": 40.73171325536469,
+      "longitude": -73.84190460084234,
+      "name": "Row New York Queens Boathouse",
+      "address": NaN,
+      "venue_category": "Boat or Ferry",
+      "venue_category_id": "4bf58dd8d48988d12d951735",
+      "venue_category_id_code": 87,
+      "venue_city": "Rego Park",
+      "venue_city_latitude": 40.72649,
+      "venue_city_longitude": -73.85264,
+      "venue_country": "US",
+      "timestamp": "2012-07-02 17:48:00"
+    },
+    {
+      "trail_id": "2013_37",
+      "user_id": 1,
+      "venue_id": 12494,
+      "latitude": 40.72389962301232,
+      "longitude": -73.8479075814229,
+      "name": "Great Wall Chinese Restaurant",
+      "address": "10437 Queens Blvd",
+      "venue_category": "Chinese Restaurant",
+      "venue_category_id": "4bf58dd8d48988d145941735",
+      "venue_category_id_code": 110,
+      "venue_city": "Rego Park",
+      "venue_city_latitude": 40.72649,
+      "venue_city_longitude": -73.85264,
+      "venue_country": "US",
+      "timestamp": "2012-07-02 17:50:00"
+    }
+  ],
+  "saved_plots": [
+    "artifacts\\eda\\trajectory_length_dist.png",
+    "artifacts\\eda\\top_categories.png",
+    "artifacts\\eda\\spatial_heatmap.png"
+  ]
+}

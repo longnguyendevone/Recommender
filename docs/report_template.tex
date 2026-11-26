@@ -1,0 +1,104 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\title{\textbf{Context-Aware Next-POI Tourist Recommendation in New York City}\\
+\large HUST IT4613 -- Recommender Systems Course Project}
+\author{Team Members: Student A, Student B, Student C}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Next-Point-of-Interest (Next-POI) recommendation is central to intelligent tourism applications, requiring models to jointly capture sequential mobility transitions, category preferences, geographic proximity, and cold-start constraints. In this report, we present an end-to-end context-aware Next-POI recommender system evaluated on the New York City Massive-STEPS benchmark (272,368 check-ins across 92,041 trails and 39,113 training POIs). We systematically implement and compare six recommendation paradigms---Popularity, Collaborative Filtering (BPR-MF), Content-Based (TF-IDF + Spatial), Spatial-Temporal SASRec, Contrastive Sequential Learning (CL4SRec), and a Context-Aware Hybrid Reranker---together with a low-latency FastAPI and React-Leaflet web prototype.
+\end{abstract}
+
+\section{Introduction and Problem Formulation}
+Given a tourist's ordered visit trajectory $S_u = (p_1, p_2, \dots, p_t)$ with POI categories $c_i$, coordinates $(\text{lat}_i, \text{lon}_i)$, timestamps $\tau_i$, and optional real-time knowledge-based constraints (maximum travel radius $R_{\max}$, preferred categories $\mathcal{C}_{\text{pref}}$, and hour of day $h$), the Next-POI task ranks all candidate venues $v \in \mathcal{V}$ to predict the next stop $p_{t+1}$.
+
+Key challenges in real-world NYC tourism include:
+\begin{itemize}
+  \item \textbf{Sequential and Spatio-Temporal Dynamics:} Tourists transition between complementary activities (e.g., museum followed by nearby cafe or restaurant) within bounded walking or transit distances.
+  \item \textbf{Data Sparsity and Long-Tail Catalog:} With 39,113 training venues and 9.28\% unseen POIs in the test check-ins, interaction matrices are highly sparse.
+  \item \textbf{Cold-Start Tourists:} First-time visitors lack historical user embeddings and require session-based or constraint-driven recommendations.
+\end{itemize}
+
+\section{Methodology}
+We implement six models under a unified \texttt{BaseRecommender} interface:
+\begin{enumerate}
+  \item \textbf{Global and Local Popularity (\texttt{popularity.py}):} Combines normalized $\log(1 + \text{pop}(v))$ with exponential spatial decay within $R = 3.0\text{ km}$ indexed by a Haversine \texttt{BallTree}.
+  \item \textbf{Collaborative Filtering BPR-MF (\texttt{cf\_bpr.py}):} Trains Bayesian Personalized Ranking matrix factorization ($d=64$, 50 iterations) on binary user-POI check-in matrices, with item-averaging fold-in for cold-start sessions.
+  \item \textbf{Content-Based TF-IDF + Spatial (\texttt{content\_based.py}):} Represents each venue via 4,096-dim bigram TF-IDF over category and name, builds recency-weighted ($0.7^{t-i}$) user profiles, and fuses cosine similarity with $\exp(-d/\sigma)$.
+  \item \textbf{Spatial-Temporal SASRec (\texttt{sequential.py}):} Encodes POI embeddings, category embeddings, cyclical time projections $(\sin/\cos\text{ hour}, \text{day-of-week})$, and $\log(1+\Delta\text{dist}), \log(1+\Delta\text{time})$ through 2 causal self-attention layers trained with sampled softmax ($K_{\text{neg}}=64$).
+  \item \textbf{CL4SRec Contrastive Sequential (\texttt{sequential\_cl.py}):} Augments trajectories with vectorized crop, mask, and local reorder operators and optimizes $\mathcal{L} = \mathcal{L}_{\text{rec}} + \lambda_{\text{cl}}\mathcal{L}_{\text{NT-Xent}}$ ($\lambda_{\text{cl}}=0.1$, $\tau=0.2$).
+  \item \textbf{Context-Aware Hybrid Reranker (\texttt{hybrid.py}):} Uses two-stage \texttt{BallTree} retrieval ($R=15\text{ km}$, unioned with sequential and CF candidates) and min-max normalized fusion tuned on the validation split:
+  \[
+    s(q, v) = 0.65\,\hat{s}_{\text{seq}}(q, v) + 0.05\,\hat{s}_{\text{cnt}}(q, v) + 0.15\,\hat{s}_{\text{cf}}(q, v) + 0.15\,e^{-d(q, v)/\sigma}.
+  \]
+\end{enumerate}
+
+\section{System Architecture and Prototype Features}
+Figure~\ref{fig:arch} summarizes the modular pipeline (source diagram available in \texttt{docs/architecture.mmd}). Heavy neural training runs on CUDA (RTX 3060, 6~GB VRAM), while offline baselines, \texttt{BallTree} spatial indexing, FastAPI REST inference (\texttt{<150 ms}), and the React + Leaflet map interface run strictly on CPU.
+
+\begin{figure}[ht]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+  \textbf{End-to-End Architecture Summary}\\
+  HF Massive-STEPS (tabular) $\rightarrow$ Preprocess + Train-Only Mappings + BallTree\\
+  $\rightarrow$ CPU Baselines \& CUDA SASRec/CL4SRec $\rightarrow$ Validation-Tuned Hybrid Reranker\\
+  $\rightarrow$ FastAPI CPU Service (\texttt{/recommend}, \texttt{/pois/search}, \texttt{/users/sample})\\
+  $\rightarrow$ React + Leaflet Split-Screen Map UI (Returning \& Cold-Start Modes)
+  }}
+  \caption{Modular data, training, and serving architecture.}
+  \label{fig:arch}
+\end{figure}
+
+\section{Third-Party Datasets, Libraries, and Tools}
+\begin{itemize}
+  \item \textbf{Dataset:} \texttt{CRUISEResearchGroup/Massive-STEPS-New-York} (\texttt{tabular} config), derived from Foursquare Open Source Places check-in trails (train: 190,740 rows / 64,428 trails; validation: 27,201 rows / 9,204 trails; test: 54,427 rows / 18,409 trails).
+  \item \textbf{ML and Geospatial Stack:} PyTorch 2.6 (CUDA 12.4), \texttt{implicit} 0.7.3, \texttt{scikit-learn} (\texttt{BallTree}, \texttt{TfidfVectorizer}), \texttt{scipy}, \texttt{pandas}, \texttt{pyarrow}.
+  \item \textbf{Web Prototype Stack:} FastAPI, Uvicorn, Pydantic v2, React 18, Vite, Leaflet, \texttt{react-leaflet}, OpenStreetMap tiles.
+\end{itemize}
+
+\section{Challenges and Engineering Solutions}
+\begin{enumerate}
+  \item \textbf{Missing Coordinates and Venue Names (~7.2\% of check-ins):} While \texttt{latitude}, \texttt{longitude}, and \texttt{name} are missing in 13,806 train rows, \texttt{venue\_city\_latitude}, \texttt{venue\_city\_longitude}, and \texttt{venue\_category} have zero missing values and provide deterministic imputation without leaking split statistics.
+  \item \textbf{6 GB VRAM Budget for 39,113-Class Output Space:} Training full cross-entropy over 39,113 POIs risks memory spikes; combining \texttt{torch.amp.autocast("cuda")}, gradient accumulation ($128 \times 2$), and 64-negative sampled softmax keeps peak VRAM at \textbf{130.59~MB} (SASRec) and \textbf{219.53~MB} (CL4SRec).
+  \item \textbf{Pad-Safe Causal Attention Under Mixed Precision:} Left-padded short trails cause all keys in padding rows to be masked; retaining self-diagonal attention on padded query rows before zeroing output embeddings eliminates fp16 softmax \texttt{NaN}s.
+  \item \textbf{Low-Latency CPU Serving:} Two-stage \texttt{BallTree} candidate retrieval caps per-query scoring to $\le 800$ local venues, keeping live FastAPI CPU inference latency well below 150~ms.
+\end{enumerate}
+
+\section{Experimental Evaluation, Discussion, and Future Work}
+Table~\ref{tab:benchmark} presents full-ranking evaluation across all 18,409 test trails (8.89\% OOV target rate).
+
+\begin{table}[ht]
+\centering
+\caption{Full-ranking offline benchmark on Massive-STEPS NYC test split (18,409 trails, 39,113 catalog POIs).}
+\label{tab:benchmark}
+\begin{tabular}{lccccccc}
+\toprule
+Model & Recall@1 & Recall@5 & Recall@10 & NDCG@10 & MRR@10 & Coverage@10 & in-vocab R@10 \\
+\midrule
+Popularity & 0.0138 & 0.0425 & 0.0648 & 0.0355 & 0.0266 & 0.0184 & 0.0711 \\
+CF-BPR & 0.0169 & 0.0545 & 0.0859 & 0.0457 & 0.0335 & 0.2135 & 0.0943 \\
+Content-Based & 0.0022 & 0.0183 & 0.0294 & 0.0142 & 0.0095 & 0.8190 & 0.0323 \\
+Spatial-Temporal SASRec & \textbf{0.0259} & 0.1225 & 0.1626 & 0.0901 & 0.0674 & 0.3616 & 0.1785 \\
+CL4SRec & 0.0253 & 0.1225 & 0.1600 & 0.0890 & 0.0666 & 0.3537 & 0.1756 \\
+\textbf{Context-Aware Hybrid} & 0.0121 & \textbf{0.1467} & \textbf{0.1989} & \textbf{0.1006} & \textbf{0.0697} & 0.4297 & \textbf{0.2183} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Findings:} Sequential modeling doubles \texttt{Recall@10} relative to CF-BPR ($0.1626$ vs.\ $0.0859$), while the Context-Aware Hybrid Reranker achieves the strongest overall \texttt{Recall@10} ($0.1989$, $+22.3\%$ over SASRec alone) and \texttt{NDCG@10} ($0.1006$) alongside broad catalog coverage ($0.4297$).
+
+\textbf{Future Work:} Incorporating real-time venue opening hours, weather context, and multi-stop constrained itinerary routing (e.g., orienteering/TSP over predicted scores) would further strengthen practical tourist utility.
+
+\end{document}

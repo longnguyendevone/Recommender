@@ -1,0 +1,18 @@
+flowchart TD
+    A["Hugging Face: CRUISEResearchGroup/Massive-STEPS-New-York (tabular)"] --> B["download_eda.py -> data/raw/{train,validation,test}.parquet"]
+    B --> C["preprocess.py: Imputation, Train-Only Mappings, Temporal & Haversine Deltas"]
+    C --> D["data/processed/poi_metadata.parquet + poi_balltree.pkl"]
+    C --> E["data/processed/{train,validation,test}_sequences.parquet"]
+
+    D --> F1["CPU Baselines: popularity.py, cf_bpr.py, content_based.py"]
+    E --> F2["PyTorch GPU Models (RTX 3060 AMP): sequential.py, sequential_cl.py"]
+    F1 --> G["hybrid.py: Validation-Tuned Reranker + BallTree Retrieval"]
+    F2 --> G
+
+    F1 --> H["artifacts/models/*.pkl & *.pt"]
+    F2 --> H
+    G --> H
+
+    H --> I["FastAPI CPU Backend (app/backend/main.py) < 150ms"]
+    D --> I
+    I --> J["React + Leaflet NYC Map UI (app/frontend/)"]

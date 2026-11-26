@@ -1,0 +1,6 @@
+dataset_name: "CRUISEResearchGroup/Massive-STEPS-New-York"
+dataset_config: "tabular"
+seed: 42
+raw_dir: "data/raw"
+processed_dir: "data/processed"
+eda_dir: "artifacts/eda"

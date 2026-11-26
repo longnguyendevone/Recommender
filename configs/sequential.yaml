@@ -1,0 +1,30 @@
+seed: 42
+processed_dir: "data/processed"
+artifacts_dir: "artifacts/models"
+
+device: "cuda"
+use_amp: true
+batch_size: 128
+grad_accum_steps: 2
+num_workers: 0
+
+model:
+  max_seq_len: 50
+  embed_dim: 64
+  num_heads: 2
+  num_layers: 2
+  dropout: 0.2
+  num_negatives: 64
+
+train:
+  epochs: 15
+  lr: 0.001
+  weight_decay: 0.0001
+  patience: 4
+
+contrastive:
+  cl_weight: 0.1
+  temperature: 0.2
+  crop_ratio: 0.6
+  mask_ratio: 0.2
+  reorder_ratio: 0.2
